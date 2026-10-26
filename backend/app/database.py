@@ -1,6 +1,7 @@
 import os
 import json
 import asyncio
+import re
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 import motor.motor_asyncio
@@ -118,19 +119,21 @@ class DatabaseManager:
 
     async def connect(self):
         try:
-            # Try connecting to MongoDB with a 2-second server selection timeout
+            # Try connecting to MongoDB with a 5-second server selection timeout
             self.client = motor.motor_asyncio.AsyncIOMotorClient(
                 settings.MONGODB_URL,
-                serverSelectionTimeoutMS=2500
+                serverSelectionTimeoutMS=5000
             )
             # Check connection
             await self.client.admin.command('ping')
             self.db = self.client[settings.DATABASE_NAME]
             self.use_fallback = False
             self.connected = True
-            print(">>> Connected to MongoDB successfully at", settings.MONGODB_URL)
+            masked_url = re.sub(r':([^:@]+)@', ':****@', str(settings.MONGODB_URL))
+            print(f">>> Connected to MongoDB successfully at {masked_url}")
         except Exception as e:
-            print(f">>> MongoDB connection not ready ({e}). Enabling Local Resilient JSON Document Store fallback.")
+            masked_err = re.sub(r':([^:@]+)@', ':****@', str(e))
+            print(f">>> MongoDB connection not ready ({masked_err}). Enabling Local Resilient JSON Document Store fallback.")
             self.use_fallback = True
             self.connected = True
 
