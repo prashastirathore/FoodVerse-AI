@@ -111,7 +111,9 @@ class GeminiService:
         except Exception as e:
             print(f">>> Gemini API Vision error: {e}. Falling back to sample intelligence.")
             demo = DemoService.get_demo_nutrition_analysis(prompt_hint)
-            demo["disclaimer"] += f" (Note: Live AI request switched to sample demo mode: {str(e)[:90]})"
+            demo["disclaimer"] = demo.get("disclaimer", "") + (
+                f" (Note: Live AI request switched to sample demo mode: {str(e)[:90]})"
+            )
             return demo
 
     async def analyze_food_freshness(self, image_bytes: Optional[bytes] = None, item_hint: str = "") -> Dict[str, Any]:
