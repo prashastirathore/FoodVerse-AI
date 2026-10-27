@@ -9,8 +9,12 @@ from app.config import settings
 
 class LocalJsonStore:
     """Fallback async-compatible storage when MongoDB is unavailable."""
-    def __init__(self, data_file: str = "backend/data/db_store.json"):
-        self.data_file = data_file
+    def __init__(self, data_file: Optional[str] = None):
+        if not data_file:
+            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            self.data_file = os.path.join(base_dir, "data", "db_store.json")
+        else:
+            self.data_file = data_file
         os.makedirs(os.path.dirname(self.data_file), exist_ok=True)
         if not os.path.exists(self.data_file):
             with open(self.data_file, "w", encoding="utf-8") as f:

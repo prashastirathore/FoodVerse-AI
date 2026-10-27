@@ -6,6 +6,8 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.config import settings
 
+import bcrypt
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security_scheme = HTTPBearer(auto_error=False)
 
@@ -19,18 +21,40 @@ DEMO_USER = {
 }
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
+    if not hashed_password or not plain_password:
+        return False
+    # Try native bcrypt first
+    try:
+        if hashed_password.startswith(("$2b$", "$2a$", "$2y$")):
+            return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
+    except Exception:
+        pass
+    # Try passlib CryptContext
     try:
         return pwd_context.verify(plain_password, hashed_password)
     except Exception:
-        # Fallback for plain comparison in demo mode or bcrypt mismatches
-        return plain_password == hashed_password
+        pass
+    # Fallback for SHA256 hashes
+    try:
+        import hashlib
+        if hashed_password == hashlib.sha256(plain_password.encode()).hexdigest():
+            return True
+    except Exception:
+        pass
+    # Fallback for plain comparison in demo mode
+    return plain_password == hashed_password
 
 def get_password_hash(password: str) -> str:
+    # Use direct bcrypt hashing to avoid passlib __about__ version mismatch
     try:
-        return pwd_context.hash(password)
+        salt = bcrypt.gensalt()
+        return bcrypt.hashpw(password.encode("utf-8"), salt).decode("utf-8")
     except Exception:
-        import hashlib
-        return hashlib.sha256(password.encode()).hexdigest()
+        try:
+            return pwd_context.hash(password)
+        except Exception:
+            import hashlib
+            return hashlib.sha256(password.encode()).hexdigest()
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()
