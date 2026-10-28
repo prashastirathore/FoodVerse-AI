@@ -20,11 +20,15 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7 # 7 days
     
+    # CORS configuration
+    CORS_ORIGINS: str = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:3000")
+    
     # Environment
     DEMO_MODE_DEFAULT: bool = True
 
     class Config:
         env_file = ".env"
-        extra = "allow"
+        env_file_encoding = "utf-8"
+        extra = "ignore"
 
 settings = Settings()

@@ -121,6 +121,10 @@ class DatabaseManager:
         self.local_store = LocalJsonStore()
         self.connected = False
 
+    @property
+    def is_mongodb_connected(self) -> bool:
+        return bool(not self.use_fallback and self.db is not None and self.connected)
+
     async def connect(self):
         try:
             # Try connecting to MongoDB with a 5-second server selection timeout
@@ -139,7 +143,7 @@ class DatabaseManager:
             masked_err = re.sub(r':([^:@]+)@', ':****@', str(e))
             print(f">>> MongoDB connection not ready ({masked_err}). Enabling Local Resilient JSON Document Store fallback.")
             self.use_fallback = True
-            self.connected = True
+            self.connected = False
 
     async def close(self):
         if self.client and not self.use_fallback:

@@ -32,10 +32,15 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS configuration
+# Configure allowed CORS origins
+raw_origins = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
+dev_origins = ["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173", "http://127.0.0.1:3000"]
+allowed_origins = list(dict.fromkeys(raw_origins + dev_origins))
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
+    allow_origin_regex=r"^https://.*\.vercel\.app$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -64,10 +69,12 @@ async def root():
 async def health_check():
     return {
         "status": "healthy",
-        "database_connected": db_manager.connected,
-        "database_mode": "MongoDB" if not db_manager.use_fallback else "Local Resilient Store"
+        "mongodb_connected": db_manager.is_mongodb_connected,
+        "storage_mode": "MongoDB" if db_manager.is_mongodb_connected else "Local Resilient Store"
     }
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    import os
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
